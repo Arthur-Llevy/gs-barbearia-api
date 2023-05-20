@@ -34,11 +34,11 @@ const controllers = {
 				id: allUsers.length + 1
 			})
 
-			res.json({message:'Usuário cadastrado com sucesso!'})
+			res.status(201).json({message:'Usuário cadastrado com sucesso!'})
 
 
 		}else {
-			res.json({message: "Usuário já cadastrado!"})
+			res.status(200).json({message: "Usuário já cadastrado!"})
 		};
 	},
 
@@ -55,17 +55,17 @@ const controllers = {
 				let token = jwt.sign({
 					id: user.id
 				}, secret, {expiresIn: 3600});
-				res.json({token: token});
+				res.status(200).json({token: token});
 			}else {
-				res.json({message: 'E-mail ou senha inválidos.'})
+				res.status(401).json({message: 'E-mail ou senha inválidos.'})
 			};
 		}else {
-			res.json({message: 'Usuário não encontrado.'})
+			res.status(404).json({message: 'Usuário não encontrado.'})
 		};
 	},
 
 	verifyToken: async (req, res) => {
-	  res.json({token: true})
+	  res.status(200).json({token: true})
 	},
 
 	barberLogin: async (req, res) => {
@@ -76,7 +76,7 @@ const controllers = {
 		let confirmBarber = await BarberModel.findOne({email: email});		
 
 		if(confirmBarber){
-			let validation = bcrypt.compare(password, confirmBarber.senha);
+			let validation = await bcrypt.compare(password, confirmBarber.senha);			
 
 			if(validation){
 				let token = jwt.sign({
@@ -84,11 +84,11 @@ const controllers = {
 				}, secret, {expiresIn: 3600});
 				res.status(200).json({token: token});
 			}else {
-				res.json({message: 'Senha incorreta.'});
+				res.status(401).json({message: 'Senha incorreta.'});
 			};
 
 		}else {
-			res.json({message: 'Usuário não encontrado.'});
+			res.status(404).json({message: 'Usuário não encontrado.'});
 		}
 
 	},
@@ -98,35 +98,35 @@ const controllers = {
 			let user = await UsersModel.findOne({id: req.body.id});
 			if(user){
 				await UsersModel.findOneAndUpdate({id: req.body.id}, {cortes: user.cortes + 1});
-				res.json({message: 'Corte adicionado com sucesso.'});
+				res.status(200).json({message: 'Corte adicionado com sucesso.'});
 			}else {
-				res.json({message: 'Usuário não encontrado.'})
+				res.status(404).json({message: 'Usuário não encontrado.'})
 			}
 		}catch(erro){
-			res.json({message: 'Ocorreu um erro a adicionar um corte.'})
+			res.status(500).json({message: 'Ocorreu um erro a adicionar um corte.'})
 		}
 	},
 
 	clientDatas:  async (req, res) => {		
 		let user = await UsersModel.findOne({id: req.decoded.id});
 		if(user){
-			res.json({name: user.nome, cuts: user.cortes});
+			res.status(200).json({name: user.nome, cuts: user.cortes});
 		}
 	},
 
 	barberDatas:  async (req, res) => {
 		let barber = await BarberModel.findOne({email: req.decoded.email})
 		if(barber){
-			res.json({name: barber.nome});
+			res.status(200).json({name: barber.nome});
 		}
 	},
 
 	findClient: async (req, res) => {
 		let user = await UsersModel.findOne({id: req.body.id});
 		if(user !== null ){
-			res.json({name: user.nome, cuts: user.cortes, id: user.id});
+			res.status(200).json({name: user.nome, cuts: user.cortes, id: user.id});
 		}else {
-			res.json({message: 'Usuário não encontrado'});
+			res.status(404).json({message: 'Usuário não encontrado'});
 		}
 	},
 
@@ -143,11 +143,11 @@ const controllers = {
 					idCliente: id,
 					nome: user.nome
 				}).
-					then(() => res.json({message: 'Solicitação enviada ao barbeiro.'}))	
+					then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
 				}).
-				catch(() => res.json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'}));
+				catch(() => res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'}));
 		}else {
-			res.json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
+			res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
 		}
 	},
 
@@ -156,12 +156,12 @@ const controllers = {
 		if(req.method === 'GET'){
 			await NotificationsModel.find({}).
 				then((data) => {
-					res.json(data)
+					res.status(200).json(data)
 			});
 		}else {
 			await ClientNotificationsModel.find({idCliente: req.decoded.id}).
-				then(data => res.json(data)).
-				catch(() => res.json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
+				then(data => res.status(200).json(data)).
+				catch(() => res.status(500).json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
 		};
 
 	},
@@ -173,26 +173,26 @@ const controllers = {
 			cortes: user.cortes + 1
 		}).
 			then(() => {}).catch(() => {
-					res.json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
+					res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
 				})
 		await NotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).
 				then(() => {		
-					ClientNotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).then(() => res.json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))
+					ClientNotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).then(() => res.status(200).json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))
 					
 				}).
-				catch(() => res.json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'}))
+				catch(() => res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'}))
 		},
 
 		deleteNotification: async (req, res) => {
 			let id = req.body.id;
 			if(req.url === '/barbeiro/excluirNotificacao'){
 				await NotificationsModel.findOneAndDelete({idCliente: id}).
-					then(() => res.json({message: 'Notificação excluida com sucesso.'})).
-					catch(() => res.json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))				
+					then(() => res.status(200).json({message: 'Notificação excluida com sucesso.'})).
+					catch(() => res.status(500).json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))				
 			}else {
 					await ClientNotificationsModel.findOneAndDelete({idCliente: id}).
-					then(() => res.json({message: 'Notificação excluida com sucesso.'})).
-					catch(() => res.json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))
+					then(() => res.status(200).json({message: 'Notificação excluida com sucesso.'})).
+					catch(() => res.status(500).json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))
 			}
 		}
 

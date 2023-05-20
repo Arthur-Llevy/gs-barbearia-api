@@ -172,12 +172,19 @@ const controllers = {
 	confirmCutRequest: async (req, res) => {
 		let id = req.body.id;
 		let user =  await UsersModel.findOne({id: id});
-		await UsersModel.findOneAndUpdate({id: id}, {
-			cortes: user.cortes + 1
-		}).
-			then(() => {}).catch(() => {
-					res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
-				})
+		if(user.cortes >= 6){
+			await UsersModel.findOneAndUpdate({id: id}, {
+				cortes: 0
+			}).then(() => res.status(200).json({message: 'Cortes zerados.'})).
+			catch(() => res.status(500).json({message: 'Falha ao zerar a quantidade de cortes, tente novamente mais tarde.'}))
+		}else {
+			await UsersModel.findOneAndUpdate({id: id}, {
+				cortes: user.cortes + 1
+			}).
+				then(() => {}).catch(() => {
+						res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
+					})
+		}
 		await NotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).
 				then(() => {		
 					ClientNotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).then(() => res.status(200).json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))

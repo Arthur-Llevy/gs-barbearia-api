@@ -96,7 +96,10 @@ const controllers = {
 	barberAddCut: async (req, res) => {			
 		try {
 			let user = await UsersModel.findOne({id: req.body.id});
-			if(user){
+			if(user.cortes >= 6){
+				await UsersModel.findOneAndUpdate({id: req.body.id}, {cortes: 0});
+				res.status(200).json({message: 'Quantidade de cortes zerado com sucesso.'});
+			}else if(user){
 				await UsersModel.findOneAndUpdate({id: req.body.id}, {cortes: user.cortes + 1});
 				res.status(200).json({message: 'Corte adicionado com sucesso.'});
 			}else {

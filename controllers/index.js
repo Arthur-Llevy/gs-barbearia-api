@@ -2,7 +2,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const UsersModel = require('../database/models/UsersModel');
 const BarberModel = require('../database/models/BarberModel');
+const NotificationsModel = require('../database/models/NotificationsModel');
 const cors = require('cors');
+const ClientNotificationsModel = require('../database/models/ClientNotifications');
 const express = require('express');
 const app = express();
 
@@ -71,8 +73,7 @@ const controllers = {
 		let email = req.body.email;
 		let password = req.body.senha;
 
-		let confirmBarber = await BarberModel.findOne({email: email});
-		console.log(confirmBarber)
+		let confirmBarber = await BarberModel.findOne({email: email});		
 
 		if(confirmBarber){
 			let validation = bcrypt.compare(password, confirmBarber.senha);
@@ -129,17 +130,71 @@ const controllers = {
 		}
 	},
 
-	clientAddCut: async (req, res) => {		
-		let user = await UsersModel.findOne({id: req.decoded.id});
-		if(user){
-			await UsersModel.findOneAndUpdate({id: user.id}, {
-				cortes: user.cortes + 1
-			});
-			res.json({message: 'Corte adicionado com sucesso.'});
+	clientRequestCut: async (req, res) => {			
+		let id = req.decoded.id;
+		let user = await UsersModel.findOne({id: id});
+		if(user){				
+			await NotificationsModel.create({
+				idCliente: id,
+				nome: user.nome
+			}).
+				then(() => {
+					ClientNotificationsModel.create({
+					idCliente: id,
+					nome: user.nome
+				}).
+					then(() => res.json({message: 'Solicitação enviada ao barbeiro.'}))	
+				}).
+				catch(() => res.json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'}));
 		}else {
-			res.json({message: 'Falha ao adicionar o corte.'})
+			res.json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
+		}
+	},
+
+	notifications: async (req, res) => {	
+
+		if(req.method === 'GET'){
+			await NotificationsModel.find({}).
+				then((data) => {
+					res.json(data)
+			});
+		}else {
+			await ClientNotificationsModel.find({idCliente: req.decoded.id}).
+				then(data => res.json(data)).
+				catch(() => res.json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
 		};
-	}
+
+	},
+
+	confirmCutRequest: async (req, res) => {
+		let id = req.body.id;
+		let user =  await UsersModel.findOne({id: id});
+		await UsersModel.findOneAndUpdate({id: id}, {
+			cortes: user.cortes + 1
+		}).
+			then(() => {}).catch(() => {
+					res.json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
+				})
+		await NotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).
+				then(() => {		
+					ClientNotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).then(() => res.json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))
+					
+				}).
+				catch(() => res.json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'}))
+		},
+
+		deleteNotification: async (req, res) => {
+			let id = req.body.id;
+			if(req.url === '/barbeiro/excluirNotificacao'){
+				await NotificationsModel.findOneAndDelete({idCliente: id}).
+					then(() => res.json({message: 'Notificação excluida com sucesso.'})).
+					catch(() => res.json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))				
+			}else {
+					await ClientNotificationsModel.findOneAndDelete({idCliente: id}).
+					then(() => res.json({message: 'Notificação excluida com sucesso.'})).
+					catch(() => res.json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))
+			}
+		}
 
 };
 

@@ -41,6 +41,20 @@ app.post('/barbeiro/procurarCliente', middlewares.verifyToken, controllers.findC
 // Barber datas
 app.post('/dadosBarbeiro', middlewares.verifyToken, controllers.barberDatas);
 
-app.patch('/cliente/adicionarCorte', middlewares.verifyToken, controllers.clientAddCut)
+// Request cut for barber
+app.post('/cliente/solicitarCorte', middlewares.verifyToken, controllers.clientRequestCut);
+
+// Get all notifications
+app.get('/barbeiro/notificacoes', middlewares.verifyToken, controllers.notifications);
+
+// Get client notifications
+app.post('/cliente/notificacoes', middlewares.verifyToken, controllers.notifications);
+
+// Confirm cut request
+app.patch('/barbeiro/confirmarSolicitacao', middlewares.verifyToken, controllers.confirmCutRequest);
+
+// Delete notification
+app.delete('/barbeiro/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
+app.delete('/cliente/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
 
 app.listen(5000, () => console.log('Server on.'));

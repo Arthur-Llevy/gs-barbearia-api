@@ -23,6 +23,12 @@ app.post('/cadastrarCliente', controllers.registerNewClient);
 // Client Login 
 app.post('/login/cliente', controllers.clientLogin);
 
+// Client register with Google Account
+app.post('/cadastrarClienteGoogle/cliente', controllers.clientRegisterWithGoogle);
+
+// Client Login with Google
+app.post('/googleLogin/cliente', controllers.clientLoginWithGoogle);
+
 // Verify token
 app.post('/verificarToken', middlewares.verifyToken, controllers.verifyToken)
 
@@ -34,6 +40,9 @@ app.patch('/barbeiro/adicionarCorte', middlewares.verifyToken, controllers.barbe
 
 // Barber login
 app.post('/loginBarbeiro', controllers.barberLogin);
+
+// Barber logi with Google
+app.post('/googleLogin/barbeiro', controllers.barberLoginWithGoogle);
 
 // Find clients
 app.post('/barbeiro/procurarCliente', middlewares.verifyToken, controllers.findClient);
@@ -57,4 +66,4 @@ app.patch('/barbeiro/confirmarSolicitacao', middlewares.verifyToken, controllers
 app.delete('/barbeiro/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
 app.delete('/cliente/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
 
-app.listen(5000, () => console.log('Server on.'));
+app.listen(5000, () => console.log('Server on in port 5000.'));

@@ -10,7 +10,6 @@ const app = express();
 
 app.use(express.json());
 
-
 const controllers = {
 
 	registerNewClient: 	async (req, res) => {
@@ -64,6 +63,38 @@ const controllers = {
 		};
 	},
 
+	clientRegisterWithGoogle: async (req, res) => {
+		const email  = req.body.email;
+		const name  = req.body.name;
+		let user = await UsersModel.findOne({email: email});
+		let allUsers = await UsersModel.find({});
+		if(!user){
+			await UsersModel.create({
+				email: email,
+				nome: name,
+				cortes: 0,
+				id: allUsers.length + 1
+			}).then(() => res.status(201).json({message: 'Cliente cadastrado com sucesso!'}))
+			.catch(() => res.status(500).json({message: 'Falha ao cadastrar o cliente. Tente novamente mais tarde.'}))
+		}else {
+			res.status(200).json({message: 'Cliente já cadastrado.'})
+		}
+	},
+
+	clientLoginWithGoogle: async (req, res) => {
+		let email = req.body.email;
+		let user = await UsersModel.findOne({email: email});
+		const secret = process.env.SECRET;
+		if(user){
+			let token = jwt.sign({
+				email: email
+			}, secret, {expiresIn: 3600});
+			res.status(200).json({token})
+		}else{
+			res.status(404).json({message: 'Usuário não encontrado.'})
+		};
+	},
+
 	verifyToken: async (req, res) => {
 	  res.status(200).json({token: true})
 	},
@@ -93,6 +124,20 @@ const controllers = {
 
 	},
 
+	barberLoginWithGoogle: async (req, res) => {
+		let email = req.body.email;
+			let user = await BarberModel.findOne({email: email});
+			const secret = process.env.SECRET;
+			if(user){
+				let token = jwt.sign({
+					email: email
+				}, secret, {expiresIn: 3600});
+				res.status(200).json({token})
+			}else{
+				res.status(404).json({message: 'Usuário não encontrado.'})
+			};
+	},
+
 	barberAddCut: async (req, res) => {			
 		try {
 			let user = await UsersModel.findOne({id: req.body.id});
@@ -111,9 +156,16 @@ const controllers = {
 	},
 
 	clientDatas:  async (req, res) => {		
-		let user = await UsersModel.findOne({id: req.decoded.id});
-		if(user){
-			res.status(200).json({name: user.nome, cuts: user.cortes});
+		if(decoded.id){
+			let user = await UsersModel.findOne({id: req.decoded.id});
+			if(user){
+				res.status(200).json({name: user.nome, cuts: user.cortes});
+			}
+		}else if(decoded.email){
+			let user = await UsersModel.findOne({email: req.decoded.email});
+			if(user){
+				res.status(200).json({name: user.nome, cuts: user.cortes});
+			}
 		}
 	},
 
@@ -134,23 +186,43 @@ const controllers = {
 	},
 
 	clientRequestCut: async (req, res) => {			
-		let id = req.decoded.id;
-		let user = await UsersModel.findOne({id: id});
-		if(user){				
-			await NotificationsModel.create({
-				idCliente: id,
-				nome: user.nome
-			}).
-				then(() => {
-					ClientNotificationsModel.create({
-					idCliente: id,
+		let decoded = req.decoded;
+		if(decoded.id){
+			let user = await UsersModel.findOne({id: decoded.id});
+			if(user){				
+				await NotificationsModel.create({
+					idCliente: decoded.id,
 					nome: user.nome
 				}).
-					then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
+					then(() => {
+						ClientNotificationsModel.create({
+						idCliente: decoded.id,
+						nome: user.nome
+					}).
+						then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
+					}).
+					catch(() => res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'}));
+			}else {
+				res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
+			}
+		}else if(decoded.email){			
+			let user = await UsersModel.findOne({email: decoded.email});
+			if(user){				
+				await NotificationsModel.create({
+					idCliente: user.id,
+					nome: user.nome
 				}).
-				catch(() => res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'}));
-		}else {
-			res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
+					then(() => {
+						ClientNotificationsModel.create({
+						idCliente: user.id,
+						nome: user.nome
+					}).
+						then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
+					}).
+					catch((erro) => res.status(500).json({message: 'erro' + erro}));
+			}else {
+				res.status(500).json({message: 'Falha ao enviar a solicitação, tente novamente mais tarde.'});
+			}
 		}
 	},
 
@@ -162,9 +234,20 @@ const controllers = {
 					res.status(200).json(data)
 			});
 		}else {
-			await ClientNotificationsModel.find({idCliente: req.decoded.id}).
-				then(data => res.status(200).json(data)).
-				catch(() => res.status(500).json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
+			if(req.decoded.id){
+				await ClientNotificationsModel.find({idCliente: req.decoded.id}).
+					then(data => {
+						res.status(200).json(data)
+					}).
+					catch(() => res.status(500).json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
+			}else if(req.decoded.email){
+				let user = await UsersModel.findOne({email: decoded.email});
+				if(user){
+					await ClientNotificationsModel.find({idCliente: user.id}).
+						then(data => res.status(200).json(data)).
+						catch(() => res.status(500).json({message: 'Falha ao buscar as notificações, tente novamente mais tarde.'}))
+				}
+			}
 		};
 
 	},

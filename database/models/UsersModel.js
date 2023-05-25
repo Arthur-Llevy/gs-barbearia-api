@@ -22,8 +22,7 @@ const UsersSchema = new mongoose.Schema({
 	},
 
 	senha: {
-		type: String,
-		required: true
+		type: String,		
 	}
 }, { timestamps: true });
 

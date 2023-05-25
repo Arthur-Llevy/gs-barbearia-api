@@ -16,7 +16,7 @@ const ClientNotificationsSchema = new mongoose.Schema({
 		required: true,
 		default: false
 	}
-});
+}, { timestamps: true });
 
 const ClientNotificationsModel =  mongoose.model('NotificacoesCliente', ClientNotificationsSchema);
 

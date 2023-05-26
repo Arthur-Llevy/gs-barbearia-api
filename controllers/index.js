@@ -32,8 +32,10 @@ const controllers = {
 				cortes: 0,
 				id: allUsers.length + 1
 			})
+				.then(data => {
+					res.status(201).json({message:`Usuário cadastrado com sucesso! Seu id para busca é ${allUsers.length + 1}`})
+				})
 
-			res.status(201).json({message:'Usuário cadastrado com sucesso!'})
 
 
 		}else {

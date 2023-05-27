@@ -192,14 +192,17 @@ const controllers = {
 		if(decoded.id){
 			let user = await UsersModel.findOne({id: decoded.id});
 			if(user){				
+				let allNotifications = await NotificationsModel.find({});
 				await NotificationsModel.create({
 					idCliente: decoded.id,
-					nome: user.nome
+					nome: user.nome,
+					id: allNotifications.length + 1
 				}).
 					then(() => {
 						ClientNotificationsModel.create({
 						idCliente: decoded.id,
-						nome: user.nome
+						nome: user.nome,
+						id: allNotifications.length + 1
 					}).
 						then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
 					}).
@@ -209,15 +212,18 @@ const controllers = {
 			}
 		}else if(decoded.email){			
 			let user = await UsersModel.findOne({email: decoded.email});
+			let allNotifications = await NotificationsModel.find({});
 			if(user){				
 				await NotificationsModel.create({
 					idCliente: user.id,
-					nome: user.nome
+					nome: user.nome,
+					id: allNotifications.length + 1
 				}).
 					then(() => {
 						ClientNotificationsModel.create({
 						idCliente: user.id,
-						nome: user.nome
+						nome: user.nome,
+						id: allNotifications.length + 1
 					}).
 						then(() => res.status(200).json({message: 'Solicitação enviada ao barbeiro.'}))	
 					}).
@@ -255,24 +261,25 @@ const controllers = {
 	},
 
 	confirmCutRequest: async (req, res) => {
+		let clientId = req.body.clientId;
 		let id = req.body.id;
-		let user =  await UsersModel.findOne({id: id});
+		let user =  await UsersModel.findOne({id: clientId});
 		if(user.cortes >= 6){
-			await UsersModel.findOneAndUpdate({id: id}, {
+			await UsersModel.findOneAndUpdate({id: clientId}, {
 				cortes: 0
 			}).then(() => res.status(200).json({message: 'Cortes zerados.'})).
 			catch(() => res.status(500).json({message: 'Falha ao zerar a quantidade de cortes, tente novamente mais tarde.'}))
 		}else {
-			await UsersModel.findOneAndUpdate({id: id}, {
+			await UsersModel.findOneAndUpdate({id: clientId}, {
 				cortes: user.cortes + 1
 			}).
 				then(() => {}).catch(() => {
 						res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'})					
 					})
 		}
-		await NotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).
+		await NotificationsModel.findOneAndUpdate({id: id}, {solicitacaoAceita: true}).
 				then(() => {		
-					ClientNotificationsModel.findOneAndUpdate({idCliente: id}, {solicitacaoAceita: true}).then(() => res.status(200).json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))
+					ClientNotificationsModel.findOneAndUpdate({id: id}, {solicitacaoAceita: true}).then(() => res.status(200).json({message: 'Solicitação aceita. Corte adicionado ao cliente'}))
 					
 				}).
 				catch(() => res.status(500).json({message: 'Falha ao confirmar solicitação de corte, tente novamente mais tarde.'}))
@@ -281,11 +288,11 @@ const controllers = {
 		deleteNotification: async (req, res) => {
 			let id = req.body.id;
 			if(req.url === '/barbeiro/excluirNotificacao'){
-				await NotificationsModel.findOneAndDelete({idCliente: id}).
+				await NotificationsModel.findOneAndDelete({id: id}).
 					then(() => res.status(200).json({message: 'Notificação excluida com sucesso.'})).
 					catch(() => res.status(500).json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))				
 			}else {
-					await ClientNotificationsModel.findOneAndDelete({idCliente: id}).
+					await ClientNotificationsModel.findOneAndDelete({id: id}).
 					then(() => res.status(200).json({message: 'Notificação excluida com sucesso.'})).
 					catch(() => res.status(500).json({message: 'Falha ao excluir a notificação. Tente novamente mais tarde.'}))
 			}

@@ -15,6 +15,11 @@ const ClientNotificationsSchema = new mongoose.Schema({
 		type: Boolean,
 		required: true,
 		default: false
+	},
+	
+	id: {
+		required: true,
+		type: Number
 	}
 }, { timestamps: true });
 

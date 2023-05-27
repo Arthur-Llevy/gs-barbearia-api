@@ -1,6 +1,4 @@
 const connection = require('./database/db');
-const UsersModel = require('./database/models/UsersModel');
-const BarberModel = require('./database/models/BarberModel');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');

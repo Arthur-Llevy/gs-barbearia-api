@@ -64,4 +64,8 @@ app.patch('/barbeiro/confirmarSolicitacao', middlewares.verifyToken, controllers
 app.delete('/barbeiro/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
 app.delete('/cliente/excluirNotificacao', middlewares.verifyToken, controllers.deleteNotification);
 
+app.post('/cliente/esqueceuSenha', controllers.clientForgotPassword);
+
+app.post('/cliente/redefinirSenha', middlewares.verifyToken ,controllers.clientChangePassword);
+
 app.listen(5000, () => console.log('Server on in port 5000.'));

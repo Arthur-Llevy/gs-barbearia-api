@@ -6,9 +6,21 @@ const NotificationsModel = require('../database/models/NotificationsModel');
 const cors = require('cors');
 const ClientNotificationsModel = require('../database/models/ClientNotifications');
 const express = require('express');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
 const app = express();
 
 app.use(express.json());
+
+let emailTransporter = nodemailer.createTransport({
+	host: "smtp.gmail.com",
+	port: 587,
+	secure: false,
+	auth: {
+		user: process.env.NODEMAILER_EMAIL,
+		pass: process.env.NODEMAILER_PASS
+	}
+});
 
 const controllers = {
 
@@ -35,8 +47,6 @@ const controllers = {
 				.then(data => {
 					res.status(201).json({message:`Usuário cadastrado com sucesso! Seu id para busca é ${allUsers.length + 1}`})
 				})
-
-
 
 		}else {
 			res.status(200).json({message: "Usuário já cadastrado!"})
@@ -76,7 +86,7 @@ const controllers = {
 				nome: name,
 				cortes: 0,
 				id: allUsers.length + 1
-			}).then(() => res.status(201).json({message: 'Cliente cadastrado com sucesso!'}))
+			}).then(() => res.status(201).json({message:`Usuário cadastrado com sucesso! Seu id para busca é ${allUsers.length + 1}`}))
 			.catch(() => res.status(500).json({message: 'Falha ao cadastrar o cliente. Tente novamente mais tarde.'}))
 		}else {
 			res.status(200).json({message: 'Cliente já cadastrado.'})
@@ -95,6 +105,48 @@ const controllers = {
 		}else{
 			res.status(404).json({message: 'Usuário não encontrado.'})
 		};
+	},
+
+	clientForgotPassword: async (req, res) => {
+		let { email } = req.body;
+		const secret = process.env.SECRET;
+		try {
+		  await UsersModel.findOne({ email: email })		  	
+		    .then(async (user) => {
+		    	let token = jwt.sign({
+		    		id: user.id
+		    	}, secret, {expiresIn: 3600})
+		      await emailTransporter.sendMail({
+		        from: process.env.NODEMAILER_EMAIL,
+		        to: email,
+		        subject: 'Esqueceu sua senha?',
+		        text: 'Clique no link abaixo para redefinir sua senha:',
+		        html: `<a href='http://localhost:3000/cliente/esqueceuSenha?token=${token}'>Redefinir senha</a>`
+		      });
+		      res.status(200).json({
+		        message: 'Um e-mail foi enviado para sua conta com as instruções para a recuperação de sua senha.'
+		      });
+		    })
+		    .catch(() =>
+		      res.status(500).json({
+		        message: 'Falha no servidor. Tente novamente mais tarde.'
+		      })
+		    );
+		} catch (error) {
+		  res.status(500).json({ message: 'Falha no servidor. Tente novamente mais tarde.' });
+		};
+	},
+
+	clientChangePassword: async (req, res) => {
+		let { password } = req.body;
+		let passwordHash = await bcrypt.hash(password, 10);
+		await UsersModel.findOne({id: req.decoded.id})
+		.then(async data => {			
+			await UsersModel.findOneAndUpdate({id: data.id}, {senha: passwordHash})
+			.then(() => res.status(200).json({message: 'Senha alterada com sucesso'}))
+			.catch(() => res.status(500).json({message: 'Falha ao alterar a senha. Tente novamente mais tarde.'}))
+		})
+		.catch(() => res.status(500).json({message: 'Falha ao redefinir a senha. Tente novamente mais tarde.'}))
 	},
 
 	verifyToken: async (req, res) => {

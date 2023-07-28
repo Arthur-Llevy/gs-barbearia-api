@@ -11,6 +11,7 @@ require('dotenv').config();
 const app = express();
 
 app.use(express.json());
+app.use(cors())
 
 let emailTransporter = nodemailer.createTransport({
 	host: "smtp.gmail.com",
@@ -26,9 +27,11 @@ const controllers = {
 
 	registerNewClient: 	async (req, res) => {
 	
-		let name = req.body.nome;
-		let email = req.body.email;
-		let password = req.body.senha;
+		let { name, email, password } = req.body;
+		
+		if(name === undefined) return res.status(400).json({msg: 'O nome é obrigatório.'});
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatório.'});
+		if(password === undefined) return res.status(400).json({msg: 'A senha é obrigatória.'});
 
 		let salt = await bcrypt.genSalt(10);
 		let passwordHash = await  bcrypt.hash(password, salt);
@@ -55,8 +58,10 @@ const controllers = {
 
 	clientLogin: async (req, res) => {
 		const secret = process.env.SECRET;
-		let email = req.body.email;	
-		let password = req.body.senha;		
+		let { email, password } = req.body;	
+
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatório.'});
+		if(password === undefined) return res.status(400).json({msg: 'A senha é obrigatória.'});
 
 		let user = await UsersModel.findOne({email: email});
 		
@@ -76,8 +81,11 @@ const controllers = {
 	},
 
 	clientRegisterWithGoogle: async (req, res) => {
-		const email  = req.body.email;
-		const name  = req.body.name;
+		const { email, name }  = req.body;
+
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatório.'});
+		if(name === undefined) return res.status(400).json({msg: 'O nome é obrigatória.'});
+
 		let user = await UsersModel.findOne({email: email});
 		let allUsers = await UsersModel.find({});
 		if(!user){
@@ -95,6 +103,9 @@ const controllers = {
 
 	clientLoginWithGoogle: async (req, res) => {
 		let email = req.body.email;
+
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatório.'});
+
 		let user = await UsersModel.findOne({email: email});
 		const secret = process.env.SECRET;
 		if(user){
@@ -109,6 +120,9 @@ const controllers = {
 
 	clientForgotPassword: async (req, res) => {
 		let { email } = req.body;
+
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatório.'});
+
 		const secret = process.env.SECRET;
 		try {
 		  await UsersModel.findOne({ email: email })		  	
@@ -139,6 +153,9 @@ const controllers = {
 
 	clientChangePassword: async (req, res) => {
 		let { password } = req.body;
+
+		if(password === undefined) return res.status(400).json({msg: 'A senha é obrigatória.'});
+
 		let passwordHash = await bcrypt.hash(password, 10);
 		await UsersModel.findOne({id: req.decoded.id})
 		.then(async data => {			
@@ -155,8 +172,10 @@ const controllers = {
 
 	barberLogin: async (req, res) => {
 		const secret = process.env.SECRET;
-		let email = req.body.email;
-		let password = req.body.senha;
+		let { email, password } = req.body;
+
+		if(password === undefined) return res.status(400).json({msg: 'A senha é obrigatória.'});
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatória.'});
 
 		let confirmBarber = await BarberModel.findOne({email: email});		
 
@@ -180,6 +199,9 @@ const controllers = {
 
 	barberLoginWithGoogle: async (req, res) => {
 		let email = req.body.email;
+
+		if(email === undefined) return res.status(400).json({msg: 'O email é obrigatória.'});
+
 			let user = await BarberModel.findOne({email: email});
 			const secret = process.env.SECRET;
 			if(user){
@@ -313,8 +335,11 @@ const controllers = {
 	},
 
 	confirmCutRequest: async (req, res) => {
-		let clientId = req.body.clientId;
-		let id = req.body.id;
+		let { clientId, id } = req.body;
+
+		if(clientId === undefined) return res.status(400).json({msg: 'O id do cliente é obrigatório.'});
+		if(id === undefined) return res.status(400).json({msg: 'O id é obrigatório.'});
+
 		let user =  await UsersModel.findOne({id: clientId});
 		if(user.cortes >= 6){
 			await UsersModel.findOneAndUpdate({id: clientId}, {
@@ -339,6 +364,8 @@ const controllers = {
 
 		deleteNotification: async (req, res) => {
 			let id = req.body.id;
+			if(id === undefined) return res.status(400).json({msg: 'O id é obrigatório.'});
+
 			if(req.url === '/barbeiro/excluirNotificacao'){
 				await NotificationsModel.findOneAndDelete({id: id}).
 					then(() => res.status(200).json({message: 'Notificação excluida com sucesso.'})).

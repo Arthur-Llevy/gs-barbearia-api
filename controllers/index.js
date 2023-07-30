@@ -8,7 +8,9 @@ const ClientNotificationsModel = require('../database/models/ClientNotifications
 const express = require('express');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+
 const app = express();
+
 
 app.use(express.json());
 app.use(cors())

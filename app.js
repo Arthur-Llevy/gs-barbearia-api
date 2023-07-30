@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const app = express();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 const controllers  = require('./controllers/index');
 const middlewares = require('./middlewares/index');
@@ -14,6 +15,17 @@ dotenv.config();
 app.use(express.json());
 const secret = process.env.SECRET;
 connection();
+
+setInterval(() => {
+	axios.post(`${process.env.API_LINK}/login/cliente`, {
+		email: 'adpoqjdopjqpqwjdasdapdjapdoajsdopjqwjdq-w1-0jd120hydaw@gmail.com',
+		password: '.'
+	}, {
+		'Content-Type': 'application/json'
+	})
+	.then(() => console.log('Consulta realizada'))
+	.catch(() => console.log('Consulta realizada (erro)'))
+}, 300000);
 
 // Route to register a new client
 app.post('/cadastrarCliente', controllers.registerNewClient);
